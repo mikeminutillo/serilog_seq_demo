@@ -1,0 +1,164 @@
+Structured Logging with Serilog
+
+{Picture of log file}
+	What is this? [A log file]
+	What's in there? [Information about the behavior of a software system]
+	Why do we do this? [To gain insight into this behavior]
+	Why do we need that? [Usually, when things go wrong!]
+	What's really in there? [TEXT! When we store our application data where do we put it? In flat text files? No? Why?]
+		[It's text so that we can read it]
+		[How much data is in there? Lots! Too Much! We don't want to read it! We want to query the data to gain insight!]
+
+	How do we write logs? [Usually with a 3rd party library. Who's using log4net? Who's using NLog? Something else?]
+	
+Introducing Serilog 
+	- An open source library for adding structured logging to your application designed by Nick Blumhardt (the Autofac guy)
+	
+Hello World!
+	
+		Install-Package Serilog
+		
+		Log.Logger = new LoggerConfiguration()
+					.WriteTo.Console()
+					.CreateLogger();
+					
+		Log.Information("Hello, World!");
+	
+	[We have logging! There's no messy XML Config to deal with] 
+	(in fact there is an open issue for this on GitHub and a long discussion to go with it. The official stance on XML Config is that they'll accept a pull request]
+	Note the static Log class is just a convenience. You don't have to use it but it makes if easy to use Serilog everywhere
+	This thing here {points to WriteTo call} is called a Sink and you can have a bunch of them
+	Let's log to a file as well
+	
+		.WriteTo.File(@"C:\Temp\Sample.Log")
+		
+	And there a number of Sinks available out of the box.
+	
+	We can parameterize the calls to our logger like this
+	
+	Log.Information("Hello {0}", "Perth");
+	
+	And it gets put into the string. Note the quotes around it. We did not specify those. Serilog has added them
+	
+	What's the difference between these two?
+	
+		Log.Information("Payment Accepted for Cart {0} from User {1}", 12345, "Mike");
+		
+	AND
+	
+		Log.Information(String.Format("Payment Accepted for Card {0} from User {1}", 12345, "Mike"));
+		
+	[In most other logging libraries there is no difference** **Not quite true
+		But is Serilog there is a very big difference but to see it we need to add some different sinks]
+		
+		
+	                .WriteTo.ColoredConsole()
+                .WriteTo.Sink(new FileSink(@"C:\Temp\Serilog\Dump.Log", new RawFormatter(), null))
+	
+	
+	Note that the Colored Console Color Codes our parameters. It knows that this is something different
+	Let's look at the new log file. It knows too. Instead of formatting everything together it keeps the format specifier as it was 
+		and stores the values. In fact you can give these values names instead of just 0 1 2 like this
+		
+	            Log.Information("Payment Accepted for Cart {cartId} from User {username}", 12345, "Mike");
+
+	So now our log is getting more useful. Why? We can easily find all the log entries that follow the same format!
+		This is something you can't do without REGEX on a normal log
+	We can also find records that contain certain information 
+	Try finding all lines in your log file with cartId = 12345 as an example
+	And these don't have to be simple objects. Let's make life more interesting
+
+				var user = new
+                {
+                    Logon = "minutilm", 
+                    ScreenName = "Mike"
+                };
+
+            Log.Information("Payment Accepted for Cart {cartId} from User {user}", 12345, user);
+			
+	Note that the colored console will deconstruct our object and display it's parts!
+		{There is a mechanism by which you can specify how an object is rendered if you care for items like password hashes and credit card numbers}
+		
+	You can even Enrich Loggers with extra information that go with every log entry
+	
+	                .Enrich.WithProperty("SERVER", Environment.MachineName)
+                .Enrich.WithThreadId()
+				
+	You can write your own enrichers and there are some on NuGet for ASP.NET to include Session identifier and Request Number
+
+	But we still have a fundamental problem and that's that the data is text and we have to parse it to get insight (which is the whole point of the exercise)
+	
+	Let's explore a different SINK that might help us to solve this problem
+	
+		There are a variety of Sinks available on Nuget including
+			CouchDB
+			AzureTableStorage
+			MongoDB
+			RavenDB
+			Splunk
+			Email
+			SignalR
+			and even Glimpse
+			
+	But we're going to look at companion product to Serilog and that's Seq
+	
+	Seq is a server that allows developers to capture, search and integrate stuctured log events
+	It is also from Nick Blumhardt
+	It is commercial software so it is not free (although it is free during the beta)
+		They have prices listed on the website and they're really reasonable.
+		Developer Edition is free
+		
+	Download the zip from getseq.net and double-click Run.bat
+	
+	You'll get a bunch of logging (not surprisingly it looks very Serilog)
+	And it will tell you it's listening. Let's go have a look
+	http://localhost:5341/
+	
+	Not very exciting yet. Let's hook up a client
+	install-package Seq.Client.Serilog
+	
+	Note that the events come to Seq where they're recorded and you have access to all of the properties
+	You can have multiple clients sending log events to Seq
+		{Spin up two "customer" consoles}
+		
+	Turn on Auto-Refresh and watch the events flow by
+		It's just like tailing a log file except that you have some more control
+		Let's do a search
+		We only care about payment info "Payment"
+		Now we're going to get just Payment Info. Is that what we want to see? Yes. 
+		Turn on Auto-Refresh and now we'll get a Payment Stream!
+		
+	What if Fred rings up to ask about his order
+	Lets look at Fred (click on Fred's name and select Filter | Any Event Type)
+	Now we can see what Fred was doing
+	Turn Auto-Refresh back on and you can monitor Fred in realtime!
+	
+	By now there should be an error. What if we don't want to wait for Fred to call.
+	Go to Settings
+	Apps
+	There is SMTP Email by default. Lets start an instance of that
+		{Run smtp4dev to show this}
+	Apps are just nuget packages and there's a blog post that explains how to write them on Nick's block
+	
+	http://www.nuget.org/packages?q=seq-app
+	
+		There are already apps for Threshhold detection (i.e. If I get 3 payment gateway timeouts in 10 minutes
+			drop a new event in the stream that says the gateway is probably down. Maybe you have an email app set
+			up to detect that condition and send you and alert)
+		File Archiving (so you can get rolling disc files of events
+		And Hot/Cold Replication
+		
+In summary
+	Use Serilog to add structured logging to your application and see what it can do for you
+	Get Seq and start actively monitoring your applications
+	
+	
+	
+	
+	
+	
+		
+		
+		
+		
+	

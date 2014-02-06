@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Seq.Client.Serilog</id>
+    <version>0.10.2</version>
+    <authors>Continuous IT Pty Ltd</authors>
+    <owners>Continuous IT Pty Ltd</owners>
+    <licenseUrl>http://apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <projectUrl>https://github.com/continuousit/seq-client</projectUrl>
+    <iconUrl>http://getseq.net/images/seq-nuget.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Serilog event sink that writes to the Seq event server over HTTP. This package completely replaces the
+    obsolete 'Seq.Client.FullNetFx' package.</description>
+    <language>en-US</language>
+    <tags>seq serilog structured logging events</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework4.0">
+        <dependency id="Serilog" />
+        <dependency id="Microsoft.Net.Http" />
+      </group>
+      <group targetFramework=".NETFramework4.5">
+        <dependency id="Serilog" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>
